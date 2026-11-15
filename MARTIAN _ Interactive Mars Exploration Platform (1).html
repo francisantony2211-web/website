@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a111b">
+  <meta name="description" content="MARTIAN by Team Callistro — an interactive Mars exploration portal integrating NASA JPL Mars Trek, Perseverance Rover Raw Images, and USGS Planetary Geologic Mapping.">
+  <title>MARTIAN | Explore the Red Planet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            space: '#0a111b',
+            panel: '#121e2b',
+            panelLight: '#192838',
+            borderLine: '#2b3b4d',
+            marsOrange: '#f17b4b',
+            marsCyan: '#7edbd5',
+            textMain: '#eef4f8',
+            textMuted: '#a9b7c5',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0a111b;
+      color: #eef4f8;
+      overflow-x: hidden;
+    }
+
+    /* Subtle starfield background */
+    .starfield {
+      background-image: 
+        radial-gradient(1px 1px at 15% 25%, rgba(255,255,255,0.45) 50%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 42% 12%, rgba(126,219,213,0.4) 50%, transparent 100%),
+        radial-gradient(1px 1px at 78% 35%, rgba(255,255,255,0.35) 50%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 88% 72%, rgba(241,123,75,0.35) 50%, transparent 100%),
+        radial-gradient(1px 1px at 26% 84%, rgba(255,255,255,0.3) 50%, transparent 100%),
+        radial-gradient(1px 1px at 62% 58%, rgba(255,255,255,0.25) 50%, transparent 100%);
+      background-size: 550px 550px;
+    }
+
+    /* Procedural Hero Mars Globe */
+    .mars-globe {
+      background: radial-gradient(circle at 32% 28%, #f4b684 0%, #c86d48 26%, #8d4937 54%, #3c282c 80%, #101622 100%);
+      box-shadow: 
+        inset -42px -30px 60px rgba(7, 11, 18, 0.95),
+        inset 12px 12px 35px rgba(255, 200, 150, 0.25),
+        0 0 95px rgba(241, 123, 75, 0.22);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mars-globe::before {
+      content: "";
+      position: absolute;
+      inset: -15%;
+      border-radius: 50%;
+      background: repeating-linear-gradient(
+        158deg,
+        transparent 0px,
+        transparent 24px,
+        rgba(64, 30, 29, 0.35) 26px,
+        rgba(64, 30, 29, 0.35) 33px,
+        transparent 35px,
+        transparent 62px
+      );
+      transform: rotate(-14deg);
+      animation: planetShift 45s linear infinite;
+    }
+
+    .mars-globe::after {
+      content: "";
+      position: absolute;
+      width: 52%;
+      height: 16%;
+      left: 16%;
+      top: 44%;
+      background: rgba(65, 31, 30, 0.55);
+      border-radius: 50%;
+      filter: blur(12px);
+      transform: rotate(-22deg);
+    }
+
+    @keyframes planetShift {
+      0% { transform: rotate(-14deg) translateX(0); }
+      50% { transform: rotate(-14deg) translateX(14px); }
+      100% { transform: rotate(-14deg) translateX(0); }
+    }
+
+    /* Satellite Orbital Ring */
+    .orbit-ring {
+      border: 1px solid rgba(241, 123, 75, 0.35);
+      border-radius: 50%;
+      transform: rotate(-23deg);
+      animation: orbitPulse 6s ease-in-out infinite;
+    }
+
+    .satellite-dot {
+      box-shadow: 0 0 16px #7edbd5, 0 0 32px #7edbd5;
+      animation: satelliteMove 12s linear infinite;
+    }
+
+    @keyframes orbitPulse {
+      0%, 100% { border-color: rgba(241, 123, 75, 0.3); }
+      50% { border-color: rgba(126, 219, 213, 0.45); }
+    }
+
+    /* Procedural Surface Map Texture */
+    .mars-surface-map {
+      background: 
+        radial-gradient(circle at 28% 34%, rgba(235, 145, 98, 0.42) 0%, transparent 24%),
+        radial-gradient(circle at 66% 62%, rgba(196, 102, 65, 0.38) 0%, transparent 28%),
+        radial-gradient(circle at 75% 78%, rgba(42, 28, 36, 0.7) 0%, transparent 26%),
+        radial-gradient(ellipse at 48% 48%, #c26b46 0%, #834434 42%, #3b292e 76%, #111a25 100%);
+    }
+
+    /* Pin pulse animation */
+    @keyframes pingSlow {
+      0% { transform: scale(1); opacity: 0.85; }
+      75%, 100% { transform: scale(2.4); opacity: 0; }
+    }
+    .pin-pulse {
+      animation: pingSlow 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+
+    /* Rover Cam Scanline Effect */
+    .rover-scanline {
+      background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(10,17,27,0.22) 50%,
+        rgba(10,17,27,0.22)
+      );
+      background-size: 100% 4px;
+    }
+  </style>
+</head>
+<body class="starfield font-sans antialiased selection:bg-marsOrange selection:text-space">
+
+  <!-- Sticky Navigation Bar -->
+  <header class="sticky top-0 z-50 bg-space/90 backdrop-blur-md border-b border-borderLine">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
+      <a href="#home" class="flex items-center gap-2.5 group">
+        <span class="w-3 h-3 rounded-full bg-marsOrange shadow-[0_0_12px_#f17b4b] group-hover:scale-110 transition-transform"></span>
+        <span class="font-black tracking-[0.22em] text-lg sm:text-xl text-textMain">
+          M<span class="text-marsOrange">A</span>RTIAN
+        </span>
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav class="hidden md:flex items-center gap-7 text-sm font-medium text-textMuted">
+        <a href="#mission" class="hover:text-white transition-colors">Mission</a>
+        <a href="#explorer" class="hover:text-white transition-colors">Interactive Explorer</a>
+        <a href="#mars-trek-live" class="hover:text-white transition-colors flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-marsCyan animate-pulse"></span>
+          Mars Trek Live
+        </a>
+        <a href="#perseverance" class="hover:text-white transition-colors">Perseverance Feed</a>
+        <a href="#resources" class="hover:text-white transition-colors">Resources</a>
+        <a href="#about" class="hover:text-white transition-colors">About</a>
+      </nav>
+
+      <!-- Mobile Menu Button -->
+      <button id="mobile-menu-btn" aria-label="Toggle navigation menu" class="md:hidden p-2.5 rounded-lg border border-borderLine text-textMain hover:bg-panel transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mobile Dropdown Nav -->
+    <div id="mobile-menu" class="hidden md:hidden bg-space border-b border-borderLine px-4 pt-2 pb-5 space-y-2">
+      <a href="#mission" class="mobile-link block py-2.5 px-3 rounded-lg text-textMuted hover:text-white hover:bg-panel">Mission</a>
+      <a href="#explorer" class="mobile-link block py-2.5 px-3 rounded-lg text-textMuted hover:text-white hover:bg-panel">Interactive Explorer</a>
+      <a href="#mars-trek-live" class="mobile-link block py-2.5 px-3 rounded-lg text-marsCyan hover:bg-panel">Mars Trek Live Portal</a>
+      <a href="#perseverance" class="mobile-link block py-2.5 px-3 rounded-lg text-textMuted hover:text-white hover:bg-panel">Perseverance Raw Images</a>
+      <a href="#resources" class="mobile-link block py-2.5 px-3 rounded-lg text-textMuted hover:text-white hover:bg-panel">Scientific Resources</a>
+      <a href="#about" class="mobile-link block py-2.5 px-3 rounded-lg text-textMuted hover:text-white hover:bg-panel">About Team Callistro</a>
+    </div>
+  </header>
+
+  <main id="home">
+    <!-- Hero Section -->
+    <section class="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-16 sm:py-20">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+        <div class="lg:col-span-7 space-y-6">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-panel border border-borderLine">
+            <span class="w-2 h-2 rounded-full bg-marsOrange"></span>
+            <span class="text-xs font-extrabold tracking-[0.18em] text-marsOrange uppercase">
+              Team Callistro · NASA Space Apps Challenge
+            </span>
+          </div>
+
+          <h1 class="text-5xl sm:text-7xl lg:text-[5.5rem] font-black tracking-tight leading-[0.92]">
+            THE RED<br>
+            <span class="text-marsOrange">PLANET.</span>
+          </h1>
+
+          <p class="text-base sm:text-lg text-textMuted max-w-xl leading-relaxed">
+            MARTIAN is an interactive planetary exploration hub connecting <strong class="text-textMain font-semibold">NASA JPL Mars Trek</strong> topography, <strong class="text-textMain font-semibold">USGS Geologic Mapping</strong>, and live <strong class="text-textMain font-semibold">Perseverance Rover Raw Images</strong> to investigate the geology and surface of Mars.
+          </p>
+
+          <div class="flex flex-wrap gap-3 pt-2">
+            <a href="#explorer" class="px-5 py-3.5 rounded-xl bg-marsOrange text-[#1b100c] font-extrabold text-sm sm:text-base hover:brightness-110 transition-all shadow-lg shadow-marsOrange/20">
+              Launch Interactive Explorer ↗
+            </a>
+            <a href="https://trek.nasa.gov/mars/" target="_blank" rel="noopener noreferrer" class="px-5 py-3.5 rounded-xl bg-panel border border-borderLine text-textMain font-bold text-sm sm:text-base hover:border-marsCyan hover:text-marsCyan transition-all">
+              Open NASA Mars Trek ↗
+            </a>
+            <a href="https://mars.nasa.gov/mars2020/multimedia/raw-images/" target="_blank" rel="noopener noreferrer" class="px-5 py-3.5 rounded-xl bg-panel border border-borderLine text-textMain font-bold text-sm sm:text-base hover:border-marsOrange hover:text-marsOrange transition-all">
+              Perseverance Raw Images ↗
+            </a>
+          </div>
+
+          <!-- Quick Data Source Badges -->
+          <div class="pt-4 flex flex-wrap items-center gap-4 text-xs font-mono text-textMuted">
+            <span class="flex items-center gap-1.5"><span class="text-marsCyan">●</span> NASA JPL Mars Trek API/Portal</span>
+            <span class="flex items-center gap-1.5"><span class="text-marsOrange">●</span> Mars 2020 Perseverance Feed</span>
+            <span class="flex items-center gap-1.5"><span class="text-emerald-400">●</span> USGS Astrogeology Maps</span>
+          </div>
+        </div>
+
+        <!-- Animated Mars Globe & Satellite -->
+        <div class="lg:col-span-5 relative min-h-[310px] sm:min-h-[380px] flex items-center justify-center" aria-label="Stylized illustration of Mars and orbiting reconnaissance satellite">
+          <!-- Orbital Trajectory -->
+          <div class="orbit-ring absolute w-[310px] sm:w-[410px] h-[115px] sm:h-[145px] pointer-events-none flex items-center">
+            <div class="satellite-dot w-3 h-3 rounded-full bg-marsCyan ml-8 -mt-16"></div>
+          </div>
+
+          <!-- Planet Sphere -->
+          <div class="mars-globe w-[240px] sm:w-[330px] aspect-square rounded-full"></div>
+
+          <!-- Telemetry HUD Tag -->
+          <div class="absolute bottom-2 right-2 sm:bottom-4 sm:right-4 bg-space/90 backdrop-blur-md border border-borderLine rounded-xl px-3.5 py-2.5 text-xs font-mono shadow-xl">
+            <div class="text-marsCyan font-bold">SOL 1300+ · JEZERO SECTOR</div>
+            <div class="text-textMuted mt-0.5">18.38° N, 77.58° E · MOLA Datum</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mission Section -->
+    <section id="mission" class="border-t border-borderLine py-16 sm:py-20 bg-space/60">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6">
+        <div class="max-w-2xl mb-10">
+          <div class="text-xs font-extrabold tracking-[0.18em] text-marsOrange uppercase mb-2">Our Mission</div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">Explore Mars through real planetary science.</h2>
+          <p class="text-textMuted text-base">
+            We bridge orbital topography, planetary stratigraphy, and rover-level surface photography so students, researchers, and enthusiasts can cross-reference Martian landmarks in one workflow.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <article class="bg-panel border border-borderLine rounded-2xl p-6 hover:border-marsOrange/60 transition-colors">
+            <div class="w-11 h-11 rounded-xl bg-marsOrange/15 border border-marsOrange/30 flex items-center justify-center text-marsOrange mb-4">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold mb-2">1. Discover Locations</h3>
+            <p class="text-sm text-textMuted leading-relaxed">
+              Navigate notable volcanoes, ancient lake basins, and tectonic canyons using elevation models and coordinate metadata linked directly to NASA Mars Trek.
+            </p>
+          </article>
+
+          <article class="bg-panel border border-borderLine rounded-2xl p-6 hover:border-marsCyan/60 transition-colors">
+            <div class="w-11 h-11 rounded-xl bg-marsCyan/15 border border-marsCyan/30 flex items-center justify-center text-marsCyan mb-4">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold mb-2">2. Understand Geology</h3>
+            <p class="text-sm text-textMuted leading-relaxed">
+              Cross-check surface units, Amazonian lava flows, and Noachian clay-bearing strata with USGS–NASA Planetary Geologic Mapping standards.
+            </p>
+          </article>
+
+          <article class="bg-panel border border-borderLine rounded-2xl p-6 hover:border-marsOrange/60 transition-colors">
+            <div class="w-11 h-11 rounded-xl bg-marsOrange/15 border border-marsOrange/30 flex items-center justify-center text-marsOrange mb-4">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold mb-2">3. See the Surface</h3>
+            <p class="text-sm text-textMuted leading-relaxed">
+              Inspect camera subsystems and jump straight into NASA's Mars 2020 Perseverance Raw Images repository to examine uncalibrated surface frames.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Upgraded Interactive Mars Explorer -->
+    <section id="explorer" class="border-t border-borderLine py-16 sm:py-20">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+          <div>
+            <div class="text-xs font-extrabold tracking-[0.18em] text-marsOrange uppercase mb-2">Interactive Region Inspector</div>
+            <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">Mars Surface Explorer</h2>
+            <p class="text-textMuted max-w-2xl">
+              Select a landmark pin on the schematic surface map or choose from the region directory to inspect planetary telemetry and open matching NASA/USGS datasets.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 text-xs font-mono bg-panel border border-borderLine px-3 py-2 rounded-lg text-marsCyan">
+            <span>●</span> 5 Priority Geological Sites Loaded
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Left: Schematic Surface Map with Coordinate Grid & Pins -->
+          <div class="lg:col-span-6 flex flex-col gap-4">
+            <div class="mars-surface-map relative min-h-[360px] sm:min-h-[430px] rounded-2xl border border-borderLine overflow-hidden shadow-2xl select-none">
+              <!-- Coordinate Grid Overlay SVG -->
+              <svg class="absolute inset-0 w-full h-full opacity-25 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <pattern id="marsGrid" width="48" height="48" patternUnits="userSpaceOnUse">
+                    <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#eef4f8" stroke-width="0.6"/>
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#marsGrid)" />
+                <!-- Equator line -->
+                <line x1="0" y1="50%" x2="100%" y2="50%" stroke="#7edbd5" stroke-width="1" stroke-dasharray="6 4" />
+                <!-- Prime Meridian -->
+                <line x1="52%" y1="0" x2="52%" y2="100%" stroke="#7edbd5" stroke-width="1" stroke-dasharray="6 4" />
+              </svg>
+
+              <!-- Top Map Header HUD -->
+              <div class="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between gap-2 z-10 pointer-events-none">
+                <span class="bg-space/90 backdrop-blur-md border border-borderLine px-3 py-1.5 rounded-lg text-xs font-mono font-bold text-textMain">
+                  MARS SCHEMATIC · EQUATORIAL PROJECTION
+                </span>
+                <span id="hud-coords" class="bg-space/90 backdrop-blur-md border border-marsCyan/40 px-3 py-1.5 rounded-lg text-xs font-mono text-marsCyan">
+                  18.65° N, 226.2° E
+                </span>
+              </div>
+
+              <!-- Interactive Pins -->
+              <!-- 1. Olympus Mons -->
+              <button data-region="Olympus Mons" aria-label="Select Olympus Mons" style="top: 30%; left: 24%;" class="map-pin group absolute -translate-x-1/2 -translate-y-1/2 z-20 p-2 cursor-pointer focus:outline-none">
+                <span class="pin-pulse absolute inset-1.5 rounded-full bg-marsOrange"></span>
+                <span class="pin-dot relative block w-4 h-4 rounded-full bg-marsOrange border-2 border-white shadow-lg transition-transform group-hover:scale-125"></span>
+                <span class="absolute left-6 top-1/2 -translate-y-1/2 whitespace-nowrap bg-space/90 border border-borderLine px-2 py-0.5 rounded text-[11px] font-mono text-white pointer-events-none">
+                  Olympus Mons
+                </span>
+              </button>
+
+              <!-- 2. Valles Marineris -->
+              <button data-region="Valles Marineris" aria-label="Select Valles Marineris" style="top: 56%; left: 39%;" class="map-pin group absolute -translate-x-1/2 -translate-y-1/2 z-20 p-2 cursor-pointer focus:outline-none">
+                <span class="pin-pulse absolute inset-1.5 rounded-full bg-marsCyan"></span>
+                <span class="pin-dot relative block w-4 h-4 rounded-full bg-marsCyan border-2 border-white shadow-lg transition-transform group-hover:scale-125"></span>
+                <span class="absolute left-6 top-1/2 -translate-y-1/2 whitespace-nowrap bg-space/90 border border-borderLine px-2 py-0.5 rounded text-[11px] font-mono text-white pointer-events-none">
+                  Valles Marineris
+                </span>
+              </button>
+
+              <!-- 3. Jezero Crater -->
+              <button data-region="Jezero Crater" aria-label="Select Jezero Crater" style="top: 33%; left: 68%;" class="map-pin group absolute -translate-x-1/2 -translate-y-1/2 z-20 p-2 cursor-pointer focus:outline-none">
+                <span class="pin-pulse absolute inset-1.5 rounded-full bg-marsCyan"></span>
+                <span class="pin-dot relative block w-4 h-4 rounded-full bg-marsCyan border-2 border-white shadow-lg transition-transform group-hover:scale-125"></span>
+                <span class="absolute right-6 top-1/2 -translate-y-1/2 whitespace-nowrap bg-space/90 border border-borderLine px-2 py-0.5 rounded text-[11px] font-mono text-white pointer-events-none">
+                  Jezero Crater
+                </span>
+              </button>
+
+              <!-- 4. Gale Crater -->
+              <button data-region="Gale Crater" aria-label="Select Gale Crater" style="top: 54%; left: 82%;" class="map-pin group absolute -translate-x-1/2 -translate-y-1/2 z-20 p-2 cursor-pointer focus:outline-none">
+                <span class="pin-pulse absolute inset-1.5 rounded-full bg-marsCyan"></span>
+                <span class="pin-dot relative block w-4 h-4 rounded-full bg-marsCyan border-2 border-white shadow-lg transition-transform group-hover:scale-125"></span>
+                <span class="absolute right-6 top-1/2 -translate-y-1/2 whitespace-nowrap bg-space/90 border border-borderLine px-2 py-0.5 rounded text-[11px] font-mono text-white pointer-events-none">
+                  Gale Crater
+                </span>
+              </button>
+
+              <!-- 5. Hellas Planitia -->
+              <button data-region="Hellas Planitia" aria-label="Select Hellas Planitia" style="top: 76%; left: 69%;" class="map-pin group absolute -translate-x-1/2 -translate-y-1/2 z-20 p-2 cursor-pointer focus:outline-none">
+                <span class="pin-pulse absolute inset-1.5 rounded-full bg-marsCyan"></span>
+                <span class="pin-dot relative block w-4 h-4 rounded-full bg-marsCyan border-2 border-white shadow-lg transition-transform group-hover:scale-125"></span>
+                <span class="absolute right-6 top-1/2 -translate-y-1/2 whitespace-nowrap bg-space/90 border border-borderLine px-2 py-0.5 rounded text-[11px] font-mono text-white pointer-events-none">
+                  Hellas Planitia
+                </span>
+              </button>
+
+              <!-- Bottom Disclaimer Caption -->
+              <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] font-mono text-textMuted bg-space/85 backdrop-blur-sm border border-borderLine px-3 py-1.5 rounded-lg">
+                <span>Illustrative coordinate schematic · Click pins to inspect</span>
+                <span class="text-marsOrange">0° Equator</span>
+              </div>
+            </div>
+
+            <!-- Region Selector Pills -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <button data-region="Olympus Mons" class="region-tab active text-left px-3.5 py-2.5 rounded-xl bg-panelLight border border-marsOrange text-sm font-bold transition-all cursor-pointer">
+                Olympus Mons
+                <span class="block text-[11px] font-normal text-textMuted">Shield Volcano</span>
+              </button>
+              <button data-region="Jezero Crater" class="region-tab text-left px-3.5 py-2.5 rounded-xl bg-panel border border-borderLine hover:border-textMuted text-sm font-bold transition-all cursor-pointer">
+                Jezero Crater
+                <span class="block text-[11px] font-normal text-textMuted">Perseverance Site</span>
+              </button>
+              <button data-region="Valles Marineris" class="region-tab text-left px-3.5 py-2.5 rounded-xl bg-panel border border-borderLine hover:border-textMuted text-sm font-bold transition-all cursor-pointer">
+                Valles Marineris
+                <span class="block text-[11px] font-normal text-textMuted">Tectonic Canyon</span>
+              </button>
+              <button data-region="Gale Crater" class="region-tab text-left px-3.5 py-2.5 rounded-xl bg-panel border border-borderLine hover:border-textMuted text-sm font-bold transition-all cursor-pointer">
+                Gale Crater
+                <span class="block text-[11px] font-normal text-textMuted">Curiosity / Mt. Sharp</span>
+              </button>
+              <button data-region="Hellas Planitia" class="region-tab col-span-2 sm:col-span-2 text-left px-3.5 py-2.5 rounded-xl bg-panel border border-borderLine hover:border-textMuted text-sm font-bold transition-all cursor-pointer">
+                Hellas Planitia
+                <span class="block text-[11px] font-normal text-textMuted">Deep Impact Basin (-7,152 m)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right: Detailed Region Telemetry & Direct External Deep Links -->
+          <div class="lg:col-span-6 bg-panel border border-borderLine rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-xl">
+            <div>
+              <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-borderLine">
+                <div>
+                  <span class="text-xs font-extrabold tracking-[0.18em] text-marsCyan uppercase">Planetary Region Profile</span>
+                  <h3 id="reg-name" class="text-2xl sm:text-3xl font-black mt-1">Olympus Mons</h3>
+                </div>
+                <span id="reg-era" class="px-3 py-1 rounded-full bg-marsOrange/15 border border-marsOrange/40 text-marsOrange font-mono text-xs font-bold">
+                  Amazonian Era
+                </span>
+              </div>
+
+              <p id="reg-summary" class="text-sm text-textMuted leading-relaxed mt-4">
+                The largest known shield volcano in the Solar System, rising nearly 22 km above the Martian datum with a complex multi-stage summit caldera.
+              </p>
+
+              <!-- Telemetry Table -->
+              <div class="mt-5 divide-y divide-borderLine border-y border-borderLine text-sm">
+                <div class="py-3 flex justify-between gap-4">
+                  <span class="text-textMuted">Areographic Coordinates</span>
+                  <strong id="reg-coords" class="font-mono text-textMain text-right">18.65° N, 226.2° E</strong>
+                </div>
+                <div class="py-3 flex justify-between gap-4">
+                  <span class="text-textMuted">Elevation / Relief</span>
+                  <strong id="reg-elevation" class="font-mono text-marsCyan text-right">+21,900 m (MOLA Datum)</strong>
+                </div>
+                <div class="py-3 flex justify-between gap-4">
+                  <span class="text-textMuted">Primary Feature Type</span>
+                  <strong id="reg-type" class="text-textMain text-right">Basaltic Shield Volcano</strong>
+                </div>
+                <div class="py-3 flex justify-between gap-4">
+                  <span class="text-textMuted">Scientific Rationale</span>
+                  <strong id="reg-rationale" class="text-textMain text-right">Magmatic evolution & lava rheology</strong>
+                </div>
+                <div class="py-3 flex justify-between gap-4">
+                  <span class="text-textMuted">Recommended Datasets</span>
+                  <strong id="reg-datasets" class="text-textMain text-right">MOLA DEM, THEMIS IR, USGS SIM 3292</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Links for this Region -->
+            <div class="mt-6 space-y-2.5">
+              <div class="text-xs font-mono text-textMuted uppercase tracking-wider">Investigate Region in Official Portals:</div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <a href="https://trek.nasa.gov/mars/" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-marsOrange text-[#1b100c] font-extrabold text-xs sm:text-sm hover:brightness-110 transition-all">
+                  <span>🛰️ Open in NASA Mars Trek</span>
+                  <span>↗</span>
+                </a>
+                <a href="https://www.usgs.gov/programs/astrogeology-science-center/science/planetary-geologic-mapping" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-panelLight border border-borderLine text-marsCyan font-bold text-xs sm:text-sm hover:border-marsCyan transition-all">
+                  <span>🌋 USGS Geologic Maps</span>
+                  <span>↗</span>
+                </a>
+              </div>
+              <a id="reg-rover-link" href="https://mars.nasa.gov/mars2020/multimedia/raw-images/" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-space border border-borderLine text-textMuted hover:text-white hover:border-textMuted text-xs font-mono transition-all">
+                <span>📷 Browse Perseverance Raw Surface Imagery Repository</span>
+                <span>↗</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scientific Caution Banner -->
+        <div class="mt-6 p-4 rounded-xl bg-panel/80 border-l-4 border-marsOrange text-xs sm:text-sm text-textMuted">
+          <strong class="text-textMain">Scientific Verification Notice:</strong> The schematic map above is an educational overview interface. For quantitative elevation profiling, crater counting, or stratigraphic verification, always inspect the authoritative layers inside <a href="https://trek.nasa.gov/mars/" target="_blank" rel="noopener noreferrer" class="text-marsCyan underline">NASA JPL Mars Trek</a> and <a href="https://www.usgs.gov/programs/astrogeology-science-center/science/planetary-geologic-mapping" target="_blank" rel="noopener noreferrer" class="text-marsCyan underline">USGS Astrogeology</a>.
+        </div>
+      </div>
+    </section>
+
+    <!-- Live Embedded NASA JPL Mars Trek Portal -->
+    <section id="mars-trek-live" class="border-t border-borderLine py-16 sm:py-20 bg-panel/40">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+          <div>
+            <div class="inline-flex items-center gap-2 text-xs font-extrabold tracking-[0.18em] text-marsCyan uppercase mb-2">
+              <span class="w-2 h-2 rounded-full bg-marsCyan animate-ping"></span>
+              Live Interactive GIS Portal
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">NASA JPL Mars Trek Workspace</h2>
+            <p class="text-textMuted mt-2 max-w-2xl">
+              Explore high-resolution orbital mosaics (CTX, HiRISE, MOLA colorized elevation) directly via NASA's Solar System Treks portal.
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2.5">
+            <button id="toggle-trek-btn" class="px-4 py-2.5 rounded-xl bg-panelLight border border-borderLine text-textMain text-xs sm:text-sm font-bold hover:border-marsCyan transition-all cursor-pointer">
+              Expand Viewer Height
+            </button>
+            <a href="https://trek.nasa.gov/mars/" target="_blank" rel="noopener noreferrer" class="px-4 py-2.5 rounded-xl bg-marsCyan text-space text-xs sm:text-sm font-extrabold hover:brightness-110 transition-all">
+              Launch Fullscreen Tab ↗
+            </a>
+          </div>
+        </div>
+
+        <!-- Iframe Wrapper with Fallback Card -->
+        <div id="trek-container" class="relative w-full h-[460px] sm:h-[560px] rounded-2xl border border-borderLine bg-space overflow-hidden shadow-2xl transition-all duration-300">
+          <!-- Fallback Banner behind/under iframe in case browser blocks cross-origin frame -->
+          <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-0">
+            <div class="w-14 h-14 rounded-2xl bg-panel border border-borderLine flex items-center justify-center text-2xl mb-4">🛰️</div>
+            <h3 class="text-xl font-bold mb-2">NASA JPL Mars Trek Interactive GIS</h3>
+            <p class="text-sm text-textMuted max-w-md mb-5">
+              If the interactive WebGL globe does not display due to browser security or network restrictions, open NASA Mars Trek directly in a dedicated window.
+            </p>
+            <a href="https://trek.nasa.gov/mars/" target="_blank" rel="noopener noreferrer" class="px-5 py-3 rounded-xl bg-marsOrange text-[#1b100c] font-extrabold text-sm hover:brightness-110">
+              Open https://trek.nasa.gov/mars/ ↗
+            </a>
+          </div>
+
+          <iframe
+            src="https://trek.nasa.gov/mars/"
+            title="NASA JPL Mars Trek Interactive Map"
+            class="relative z-10 w-full h-full border-0"
+            loading="lazy"
+            allowfullscreen>
+          </iframe>
+        </div>
+      </div>
+    </section>
+
+    <!-- Perseverance Rover Raw Images & Camera Telemetry Explorer -->
+    <section id="perseverance" class="border-t border-borderLine py-16 sm:py-20">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+          <div>
+            <div class="text-xs font-extrabold tracking-[0.18em] text-marsOrange uppercase mb-2">Mars 2020 Mission Surface Feed</div>
+            <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Perseverance Rover Raw Images</h2>
+            <p class="text-textMuted mt-2 max-w-2xl">
+              Filter Perseverance's imaging instruments below to inspect camera specifications, Jezero Crater target contexts, and jump directly to NASA's live downlink gallery.
+            </p>
+          </div>
+          <a href="https://mars.nasa.gov/mars2020/multimedia/raw-images/" target="_blank" rel="noopener noreferrer" class="px-5 py-3 rounded-xl bg-marsOrange text-[#1b100c] font-extrabold text-xs sm:text-sm hover:brightness-110 transition-all shrink-0 text-center">
+            Open Official NASA Raw Images Feed ↗
+          </a>
+        </div>
+
+        <!-- Instrument Filter Tabs -->
+        <div class="flex flex-wrap gap-2 mb-6" role="tablist" aria-label="Perseverance camera filters">
+          <button data-cam="ALL" class="cam-filter active px-4 py-2 rounded-xl bg-marsCyan text-space font-extrabold text-xs sm:text-sm cursor-pointer transition-all">
+            All Instruments (6)
+          </button>
+          <button data-cam="MASTCAM-Z" class="cam-filter px-4 py-2 rounded-xl bg-panel border border-borderLine text-textMuted hover:text-white font-bold text-xs sm:text-sm cursor-pointer transition-all">
+            Mastcam-Z
+          </button>
+          <button data-cam="NAVCAM" class="cam-filter px-4 py-2 rounded-xl bg-panel border border-borderLine text-textMuted hover:text-white font-bold text-xs sm:text-sm cursor-pointer transition-all">
+            Navcam
+          </button>
+          <button data-cam="SUPERCAM" class="cam-filter px-4 py-2 rounded-xl bg-panel border border-borderLine text-textMuted hover:text-white font-bold text-xs sm:text-sm cursor-pointer transition-all">
+            SuperCam RMI
+          </button>
+          <button data-cam="WATSON" class="cam-filter px-4 py-2 rounded-xl bg-panel border border-borderLine text-textMuted hover:text-white font-bold text-xs sm:text-sm cursor-pointer transition-all">
+            SHERLOC WATSON
+          </button>
+          <button data-cam="HAZCAM" class="cam-filter px-4 py-2 rounded-xl bg-panel border border-borderLine text-textMuted hover:text-white font-bold text-xs sm:text-sm cursor-pointer transition-all">
+            Front/Rear Hazcam
+          </button>
+        </div>
+
+        <!-- Rover Telemetry Cards Grid -->
+        <div id="rover-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Scientific Resources Section -->
+    <section id="resources" class="border-t border-borderLine py-16 sm:py-20 bg-panel/30">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6">
+        <div class="max-w-2xl mb-10">
+          <div class="text-xs font-extrabold tracking-[0.18em] text-marsCyan uppercase mb-2">Authoritative Data Sources</div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">Explore trusted Mars science portals.</h2>
+          <p class="text-textMuted">
+            MARTIAN is built around open planetary science archives maintained by NASA, JPL, and the U.S. Geological Survey.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Resource 1: Mars Trek -->
+          <article class="bg-panel border border-borderLine rounded-2xl p-6 flex flex-col justify-between hover:border-marsOrange transition-all">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-2xl">🛰️</span>
+                <span class="text-xs font-mono px-2.5 py-1 rounded bg-space border border-borderLine text-marsOrange">NASA / JPL</span>
+              </div>
+              <h3 class="text-xl font-bold mb-2">NASA JPL Mars Trek</h3>
+              <p class="text-sm text-textMuted leading-relaxed">
+                An interactive web-based planetary mapping and modeling portal allowing users to visualize surface terrain, measure elevation profiles, generate 3D print files, and overlay multi-mission science layers.
+              </p>
+            </div>
+            <div class="pt-6 mt-6 border-t border-borderLine">
+              <a href="https://trek.nasa.gov/mars/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-marsCyan font-extrabold text-sm hover:underline">
+                <span>https://trek.nasa.gov/mars/</span>
+                <span>↗</span>
+              </a>
+            </div>
+          </article>
+
+          <!-- Resource 2: Perseverance Raw Images -->
+          <article class="bg-panel border border-borderLine rounded-2xl p-6 flex flex-col justify-between hover:border-marsCyan transition-all">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-2xl">📸</span>
+                <span class="text-xs font-mono px-2.5 py-1 rounded bg-space border border-borderLine text-marsCyan">MARS 2020</span>
+              </div>
+              <h3 class="text-xl font-bold mb-2">Perseverance Rover Raw Images</h3>
+              <p class="text-sm text-textMuted leading-relaxed">
+                Direct public repository of raw images downlinked from NASA's Perseverance rover in Jezero Crater. Filter by Sol, engineering cameras, Mastcam-Z, and science instruments.
+              </p>
+            </div>
+            <div class="pt-6 mt-6 border-t border-borderLine">
+              <a href="https://mars.nasa.gov/mars2020/multimedia/raw-images/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-marsCyan font-extrabold text-sm hover:underline break-all">
+                <span>mars.nasa.gov/mars2020/.../raw-images/</span>
+                <span>↗</span>
+              </a>
+            </div>
+          </article>
+
+          <!-- Resource 3: USGS Geologic Mapping -->
+          <article class="bg-panel border border-borderLine rounded-2xl p-6 flex flex-col justify-between hover:border-marsOrange transition-all">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-2xl">🌋</span>
+                <span class="text-xs font-mono px-2.5 py-1 rounded bg-space border border-borderLine text-emerald-400">USGS / NASA</span>
+              </div>
+              <h3 class="text-xl font-bold mb-2">USGS Planetary Geologic Mapping</h3>
+              <p class="text-sm text-textMuted leading-relaxed">
+                Standardized planetary geologic maps published by the USGS Astrogeology Science Center, detailing Martian stratigraphic units, structural faults, and crater-retention ages.
+              </p>
+            </div>
+            <div class="pt-6 mt-6 border-t border-borderLine">
+              <a href="https://www.usgs.gov/programs/astrogeology-science-center/science/planetary-geologic-mapping" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-marsCyan font-extrabold text-sm hover:underline">
+                <span>Explore USGS Astrogeology</span>
+                <span>↗</span>
+              </a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- About Team Callistro -->
+    <section id="about" class="border-t border-borderLine py-16 sm:py-20">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6">
+        <div class="max-w-2xl mb-10">
+          <div class="text-xs font-extrabold tracking-[0.18em] text-marsOrange uppercase mb-2">About MARTIAN</div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">Built by Team Callistro.</h2>
+          <p class="text-textMuted">
+            Created for the NASA Space Apps Challenge, MARTIAN demonstrates how open orbital GIS tools and rover telemetry can be unified into an intuitive learning and exploration interface.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="bg-panel border border-borderLine rounded-2xl p-6">
+            <h3 class="font-bold text-lg text-marsOrange mb-2">Scientific Transparency</h3>
+            <p class="text-sm text-textMuted leading-relaxed">
+              Every visual schematic clearly distinguishes illustrative summaries from primary NASA/JPL and USGS datasets so users develop strong data literacy.
+            </p>
+          </div>
+          <div class="bg-panel border border-borderLine rounded-2xl p-6">
+            <h3 class="font-bold text-lg text-marsCyan mb-2">Extensible Data Pipeline</h3>
+            <p class="text-sm text-textMuted leading-relaxed">
+              Designed to pair seamlessly with Python, Pandas, and Streamlit analytics workflows for querying Mars 2020 JSON feeds and WMTS map tiles.
+            </p>
+          </div>
+          <div class="bg-panel border border-borderLine rounded-2xl p-6">
+            <h3 class="font-bold text-lg text-textMain mb-2">Accessible Exploration</h3>
+            <p class="text-sm text-textMuted leading-relaxed">
+              Lowering the barrier to planetary science by giving anyone one-click access to real Martian topography and rover cameras.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-borderLine py-8 bg-space">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-textMuted">
+      <div class="flex items-center gap-2">
+        <span class="font-black tracking-widest text-textMain">M<span class="text-marsOrange">A</span>RTIAN</span>
+        <span>· © 2026 TEAM CALLISTRO</span>
+      </div>
+      <div class="flex flex-wrap items-center justify-center gap-4">
+        <a href="https://trek.nasa.gov/mars/" target="_blank" rel="noopener noreferrer" class="hover:text-marsCyan transition-colors">NASA Mars Trek</a>
+        <span>•</span>
+        <a href="https://mars.nasa.gov/mars2020/multimedia/raw-images/" target="_blank" rel="noopener noreferrer" class="hover:text-marsCyan transition-colors">Perseverance Raw Images</a>
+        <span>•</span>
+        <span class="text-marsCyan font-semibold">NASA Space Apps Challenge</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Interactive JavaScript -->
+  <script>
+    // 1. Mars Regions Dataset
+    const marsRegions = {
+      "Olympus Mons": {
+        coords: "18.65° N, 226.2° E",
+        elevation: "+21,900 m (MOLA Datum)",
+        era: "Amazonian Era",
+        type: "Basaltic Shield Volcano",
+        rationale: "Magmatic evolution, caldera collapse & long-lived mantle plumes",
+        datasets: "MOLA DEM, THEMIS IR, USGS SIM 3292",
+        summary: "The largest known shield volcano in the Solar System, rising nearly 22 km above the Martian datum and spanning roughly 600 km in diameter with steep basal escarpments."
+      },
+      "Jezero Crater": {
+        coords: "18.38° N, 77.58° E",
+        elevation: "-2,570 m (Isidis Rim)",
+        era: "Noachian–Hesperian",
+        type: "Impact Crater & Paleolake Delta",
+        rationale: "Astrobiology, fluvial-lacustrine sediments & biosignature preservation",
+        datasets: "HiRISE DTM, CRISM Mineralogy, Perseverance Raw Images",
+        summary: "A 45-km-wide impact crater on the western edge of Isidis Planitia that once hosted a liquid water lake and river delta—currently explored by NASA's Perseverance rover."
+      },
+      "Valles Marineris": {
+        coords: "13.9° S, 300.8° E",
+        elevation: "Down to -7,000 m depth",
+        era: "Hesperian Era",
+        type: "Tectonic Rift & Canyon System",
+        rationale: "Crustal extension, layered sulfate deposits & mass-wasting landslides",
+        datasets: "HRSC Stereo, MOLA Topography, USGS Geologic Map",
+        summary: "A colossal system of canyons stretching over 4,000 km along the Martian equator—nearly ten times longer and four times deeper than Earth's Grand Canyon."
+      },
+      "Gale Crater": {
+        coords: "5.4° S, 137.8° E",
+        elevation: "-4,500 m (Aeolis Mons +5.5 km)",
+        era: "Noachian–Hesperian",
+        type: "Impact Basin with Central Layered Peak",
+        rationale: "Clay-to-sulfate transition recording ancient climate drying",
+        datasets: "CTX Mosaic, Curiosity MSL Archive, USGS SIM 3292",
+        summary: "A 154-km diameter crater featuring Aeolis Mons (Mount Sharp), a 5.5-km-high central mountain of sedimentary layers preserving billions of years of Martian environmental history."
+      },
+      "Hellas Planitia": {
+        coords: "42.4° S, 70.5° E",
+        elevation: "-7,152 m (Lowest Elevation)",
+        era: "Early Noachian",
+        type: "Giant Multi-Ring Impact Basin",
+        rationale: "High surface atmospheric pressure, glacial-like viscous flow features",
+        datasets: "MOLA Global Grid, SHARAD Subsurface Radar",
+        summary: "One of the largest preserved impact craters in the Solar System, spanning ~2,300 km across the southern highlands with atmospheric pressure high enough to support transient frosts."
+      }
+    };
+
+    // 2. Perseverance Rover Camera Instruments Dataset
+    const roverCameras = [
+      {
+        id: "MASTCAM-Z",
+        instrument: "Mastcam-Z (Left & Right)",
+        role: "Stereoscopic Zoom Science Camera",
+        solTag: "SOL 1300+ · BRIGHT ANGEL / NERETVA VALLIS",
+        resolution: "1600 × 1200 px · True Color & Multispectral",
+        description: "Captures high-definition 3D panoramas and mineralogical color spectra of distant crater rim outcrops and sedimentary strata.",
+        gradient: "from-[#5c3024] via-[#9e5338] to-[#261b24]"
+      },
+      {
+        id: "NAVCAM",
+        instrument: "Engineering Navcams",
+        role: "Wide-Field Stereo Navigation",
+        solTag: "SOL 1295+ · JEZERO CRATER RIM ASCENT",
+        resolution: "5120 × 3840 px · 96° Field of View",
+        description: "Mounted on the rover mast to map terrain hazards, boulder fields, and slope angles for autonomous driving path planning.",
+        gradient: "from-[#2d343e] via-[#6d5043] to-[#17202b]"
+      },
+      {
+        id: "SUPERCAM",
+        instrument: "SuperCam Remote Micro-Imager",
+        role: "Telescopic Context & LIBS Target Imaging",
+        solTag: "SOL 1288+ · LASER SPECTROSCOPY TARGET",
+        resolution: "2048 × 2048 px · Sub-millimeter Detail",
+        description: "Provides ultra-close-up context photographs of rock targets vaporized by SuperCam's pulsed infrared laser spectrometer.",
+        gradient: "from-[#3a2a28] via-[#b86948] to-[#1b1f2a]"
+      },
+      {
+        id: "WATSON",
+        instrument: "SHERLOC WATSON",
+        role: "Robotic Arm Microscopic Imager",
+        solTag: "SOL 1280+ · ABRADED ROCK PATCH",
+        resolution: "1600 × 1200 px · 13 µm/pixel Macro",
+        description: "Mounted on the 2-meter robotic arm turret to photograph fine-scale rock grains, veins, and potential organic-bearing textures.",
+        gradient: "from-[#4b2e26] via-[#c77952] to-[#241c24]"
+      },
+      {
+        id: "HAZCAM",
+        instrument: "Front & Rear Hazcams",
+        role: "Chassis-Mounted Hazard Avoidance",
+        solTag: "SOL 1302+ · ROVER WHEEL & DRILL TELEMETRY",
+        resolution: "5120 × 3840 px · Wide Fisheye Stereo",
+        description: "Monitors terrain directly beneath the six aluminum wheels and verifies safe robotic arm and sample-caching operations.",
+        gradient: "from-[#252c36] via-[#7c4937] to-[#121923]"
+      },
+      {
+        id: "MASTCAM-Z",
+        instrument: "Mastcam-Z Solar & Atmospheric",
+        role: "Sky Opacity & Dust Devil Monitoring",
+        solTag: "SOL 1274+ · ATMOSPHERIC TAU SURVEY",
+        resolution: "Solar Neutral-Density Filter",
+        description: "Tracks atmospheric dust optical depth (Tau), twilight clouds, and passing convective vortices across Jezero Crater.",
+        gradient: "from-[#1e2c3a] via-[#8c523b] to-[#101822]"
+      }
+    ];
+
+    // Region Selection Handler
+    function selectRegion(regionName) {
+      const data = marsRegions[regionName];
+      if (!data) return;
+
+      document.getElementById("reg-name").textContent = regionName;
+      document.getElementById("reg-coords").textContent = data.coords;
+      document.getElementById("hud-coords").textContent = data.coords;
+      document.getElementById("reg-elevation").textContent = data.elevation;
+      document.getElementById("reg-era").textContent = data.era;
+      document.getElementById("reg-type").textContent = data.type;
+      document.getElementById("reg-rationale").textContent = data.rationale;
+      document.getElementById("reg-datasets").textContent = data.datasets;
+      document.getElementById("reg-summary").textContent = data.summary;
+
+      // Update Tab Styles
+      document.querySelectorAll(".region-tab").forEach(btn => {
+        const isMatch = btn.dataset.region === regionName;
+        btn.classList.toggle("bg-panelLight", isMatch);
+        btn.classList.toggle("border-marsOrange", isMatch);
+        btn.classList.toggle("bg-panel", !isMatch);
+        btn.classList.toggle("border-borderLine", !isMatch);
+      });
+
+      // Update Map Pin Styles
+      document.querySelectorAll(".map-pin").forEach(pin => {
+        const isMatch = pin.dataset.region === regionName;
+        const dot = pin.querySelector(".pin-dot");
+        const pulse = pin.querySelector(".pin-pulse");
+        if (dot && pulse) {
+          dot.classList.toggle("bg-marsOrange", isMatch);
+          dot.classList.toggle("bg-marsCyan", !isMatch);
+          dot.classList.toggle("scale-125", isMatch);
+          pulse.classList.toggle("bg-marsOrange", isMatch);
+          pulse.classList.toggle("bg-marsCyan", !isMatch);
+        }
+      });
+    }
+
+    // Render Rover Camera Cards
+    function renderRoverCards(filter = "ALL") {
+      const grid = document.getElementById("rover-grid");
+      const filtered = filter === "ALL"
+        ? roverCameras
+        : roverCameras.filter(item => item.id === filter);
+
+      grid.innerHTML = filtered.map(cam => `
+        <article class="bg-panel border border-borderLine rounded-2xl overflow-hidden flex flex-col justify-between hover:border-marsOrange/70 transition-all group">
+          <div>
+            <!-- Procedural Rover Telemetry Viewport -->
+            <div class="relative h-44 bg-gradient-to-br ${cam.gradient} p-4 flex flex-col justify-between overflow-hidden">
+              <div class="rover-scanline absolute inset-0 pointer-events-none"></div>
+              <!-- Crosshair Reticle SVG -->
+              <svg class="absolute inset-0 w-full h-full opacity-30 pointer-events-none" viewBox="0 0 200 120" fill="none">
+                <circle cx="100" cy="60" r="24" stroke="#7edbd5" stroke-width="0.7" stroke-dasharray="3 3"/>
+                <line x1="65" y1="60" x2="135" y2="60" stroke="#7edbd5" stroke-width="0.6"/>
+                <line x1="100" y1="30" x2="100" y2="90" stroke="#7edbd5" stroke-width="0.6"/>
+              </svg>
+              <div class="relative z-10 flex items-center justify-between gap-2">
+                <span class="px-2.5 py-1 rounded bg-space/85 border border-borderLine font-mono text-[11px] font-bold text-marsCyan">
+                  ${cam.id}
+                </span>
+                <span class="px-2 py-0.5 rounded bg-space/75 font-mono text-[10px] text-textMuted">
+                  MARS 2020
+                </span>
+              </div>
+              <div class="relative z-10 bg-space/85 backdrop-blur-sm border border-borderLine rounded-lg px-3 py-1.5 font-mono text-[11px] text-textMain">
+                ${cam.solTag}
+              </div>
+            </div>
+
+            <div class="p-5">
+              <div class="text-xs font-mono text-marsOrange mb-1">${cam.role}</div>
+              <h3 class="text-lg font-bold text-textMain mb-2">${cam.instrument}</h3>
+              <p class="text-sm text-textMuted leading-relaxed mb-3">${cam.description}</p>
+              <div class="text-xs font-mono text-textMuted bg-space/70 border border-borderLine rounded-lg px-3 py-2">
+                Spec: <span class="text-textMain">${cam.resolution}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="px-5 pb-5">
+            <a href="https://mars.nasa.gov/mars2020/multimedia/raw-images/" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-panelLight border border-borderLine text-marsCyan font-bold text-xs hover:bg-marsCyan hover:text-space transition-all">
+              <span>View ${cam.id} Frames on NASA.gov</span>
+              <span>↗</span>
+            </a>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    // Initialize Event Listeners
+    document.addEventListener("DOMContentLoaded", () => {
+      // Region click handlers
+      document.querySelectorAll("[data-region]").forEach(el => {
+        el.addEventListener("click", () => selectRegion(el.dataset.region));
+      });
+
+      // Rover camera filter handlers
+      document.querySelectorAll(".cam-filter").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".cam-filter").forEach(b => {
+            b.classList.remove("bg-marsCyan", "text-space", "font-extrabold");
+            b.classList.add("bg-panel", "border", "border-borderLine", "text-textMuted", "font-bold");
+          });
+          btn.classList.remove("bg-panel", "border", "border-borderLine", "text-textMuted", "font-bold");
+          btn.classList.add("bg-marsCyan", "text-space", "font-extrabold");
+          renderRoverCards(btn.dataset.cam);
+        });
+      });
+
+      // Expand/Collapse Mars Trek iframe height
+      const trekContainer = document.getElementById("trek-container");
+      const toggleTrekBtn = document.getElementById("toggle-trek-btn");
+      let expanded = false;
+      toggleTrekBtn.addEventListener("click", () => {
+        expanded = !expanded;
+        if (expanded) {
+          trekContainer.classList.remove("h-[460px]", "sm:h-[560px]");
+          trekContainer.classList.add("h-[720px]", "sm:h-[820px]");
+          toggleTrekBtn.textContent = "Collapse Viewer Height";
+        } else {
+          trekContainer.classList.remove("h-[720px]", "sm:h-[820px]");
+          trekContainer.classList.add("h-[460px]", "sm:h-[560px]");
+          toggleTrekBtn.textContent = "Expand Viewer Height";
+        }
+      });
+
+      // Mobile navigation toggle
+      const mobileBtn = document.getElementById("mobile-menu-btn");
+      const mobileMenu = document.getElementById("mobile-menu");
+      mobileBtn.addEventListener("click", () => {
+        mobileMenu.classList.toggle("hidden");
+      });
+      document.querySelectorAll(".mobile-link").forEach(link => {
+        link.addEventListener("click", () => mobileMenu.classList.add("hidden"));
+      });
+
+      // Initial render
+      renderRoverCards("ALL");
+    });
+  </script>
+</body>
+</html>
